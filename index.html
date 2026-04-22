@@ -1,0 +1,1109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>漢字 Chinese Mastery</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;700&family=Cinzel:wght@400;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; font-family: 'Noto Serif SC', serif; background: #0f0c29; color: #fff; }
+    #app { min-height: 100vh; }
+
+    @keyframes fadeIn  { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes pulse   { 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.04); } }
+    @keyframes shake   { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-8px)} 40%{transform:translateX(8px)} 60%{transform:translateX(-5px)} 80%{transform:translateX(5px)} }
+    @keyframes streakPop { 0%{transform:scale(1)} 40%{transform:scale(1.22)} 100%{transform:scale(1)} }
+    .animate-in    { animation: fadeIn 0.4s ease both; }
+    .correct-pulse { animation: pulse 0.4s ease; }
+    .wrong-shake   { animation: shake 0.4s ease; }
+
+    .btn { transition: all 0.15s; cursor: pointer; font-family: 'Noto Serif SC', serif; }
+    .btn:hover { transform: translateY(-2px); filter: brightness(1.13); }
+    .btn:active { transform: translateY(0); }
+    .hidden { display: none !important; }
+
+    /* ── SETUP ── */
+    #screen-setup {
+      min-height: 100vh;
+      background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+      display: flex; align-items: center; justify-content: center; padding: 20px;
+    }
+    .setup-card {
+      background: rgba(255,255,255,0.05); backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,0.15); border-radius: 24px;
+      padding: 40px 38px; max-width: 480px; width: 100%;
+      box-shadow: 0 32px 80px rgba(0,0,0,0.5); animation: fadeIn 0.4s ease both;
+    }
+    .setup-title-zh { font-size: 50px; text-align: center; margin-bottom: 4px; }
+    .setup-title    { font-family: 'Cinzel', serif; color: #e8d5a3; font-size: 20px; text-align: center; margin-bottom: 4px; letter-spacing: 3px; }
+    .setup-sub      { color: rgba(232,213,163,0.6); font-size: 12px; text-align: center; margin-bottom: 18px; }
+    .streak-banner  {
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      background: rgba(232,213,163,0.08); border: 1px solid rgba(232,213,163,0.2);
+      border-radius: 12px; padding: 10px 16px; margin-bottom: 18px;
+    }
+    .streak-flame { font-size: 24px; animation: streakPop 1s ease; }
+    .streak-count { font-family: 'Cinzel', serif; font-size: 22px; color: #e8d5a3; font-weight: bold; }
+    .streak-label { font-size: 11px; color: rgba(232,213,163,0.6); line-height: 1.4; }
+
+    /* ── HOME WIDGETS row ── */
+    .home-widgets {
+      display: grid;
+      grid-template-columns: 1fr 3fr;   /* 25% streak | 75% chart */
+      gap: 10px; margin-bottom: 18px; align-items: stretch;
+    }
+    .widget-streak {
+      background: rgba(232,213,163,0.08); border: 1px solid rgba(232,213,163,0.2);
+      border-radius: 14px; padding: 12px 10px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; text-align: center;
+    }
+    .widget-stats {
+      background: rgba(144,205,244,0.07); border: 1px solid rgba(144,205,244,0.2);
+      border-radius: 14px; padding: 14px 16px; cursor: pointer;
+      display: flex; align-items: center; gap: 10px; transition: all 0.15s;
+    }
+    .widget-stats:hover { background: rgba(144,205,244,0.14); transform: translateY(-1px); }
+    .widget-icon  { font-size: 22px; flex-shrink: 0; }
+    .widget-text  { flex: 1; }
+    .widget-val   { font-family: 'Cinzel', serif; font-size: 20px; font-weight: bold; }
+    .widget-lbl   { font-size: 10px; line-height: 1.4; opacity: 0.65; }
+
+    /* ── WEEKLY CHART — lives inside the 75% cell ── */
+    .widget-chart {
+      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 14px; padding: 10px 14px;
+      display: flex; flex-direction: column;
+    }
+    .wc-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+    .wc-title  { font-size: 9px; color: rgba(255,255,255,0.4); letter-spacing: 1.5px; text-transform: uppercase; }
+    .wc-avg    { font-size: 9px; color: rgba(255,255,255,0.3); }
+    .wc-bars   { display: flex; align-items: flex-end; gap: 4px; flex: 1; min-height: 48px; }
+    .wc-col    { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; height: 100%; }
+    .wc-bar-wrap { flex: 1; width: 100%; display: flex; align-items: flex-end; position: relative; }
+    .wc-bar    { width: 100%; border-radius: 3px 3px 0 0; min-height: 2px; transition: height 0.4s ease; }
+    .wc-day    { font-size: 9px; color: rgba(255,255,255,0.3); flex-shrink: 0; }
+
+    /* ── Analytics button widget (25%, right side of row 2) ── */
+    .widget-analytics {
+      background: rgba(160,130,255,0.08); border: 1px solid rgba(160,130,255,0.25);
+      border-radius: 14px; padding: 10px 6px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 5px; cursor: pointer; transition: all 0.15s; color: #c4b5fd;
+    }
+    .widget-analytics:hover { background: rgba(160,130,255,0.18); transform: translateY(-1px); }
+
+    /* ── quiz bottom row ── */
+    .quiz-bottom-row { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-bottom: 9px; }
+    .prev-btn {
+      padding: 9px; border-radius: 10px;
+      background: rgba(255,255,255,0.04); border: 1.5px solid rgba(255,255,255,0.15);
+      color: rgba(255,255,255,0.4); font-size: 12px; cursor: pointer;
+    }
+    .prev-btn:hover { background: rgba(255,255,255,0.09); color: rgba(255,255,255,0.7); }
+    .prev-btn:disabled { opacity: 0.2; cursor: default; transform: none; filter: none; }
+    .progress-track { background: rgba(255,255,255,0.1); border-radius: 6px; height: 6px; }
+    .progress-fill  { background: linear-gradient(90deg, #e8d5a3, #c9a96e); border-radius: 6px; height: 100%; transition: width 0.5s; }
+    .unlock-note    { font-size: 10px; color: rgba(255,255,255,0.35); margin-top: 8px; text-align: center; }
+    .option-label   { color: rgba(255,255,255,0.8); font-size: 12px; display: block; margin-bottom: 8px; }
+    .option-row     { display: flex; gap: 8px; margin-bottom: 16px; }
+    .opt-btn {
+      flex: 1; padding: 10px 0; border-radius: 10px; border: 1.5px solid rgba(255,255,255,0.15);
+      background: transparent; color: rgba(255,255,255,0.5); font-size: 15px; font-weight: bold;
+    }
+    .opt-btn.active-gold { border-color: #e8d5a3; background: rgba(232,213,163,0.15); color: #e8d5a3; }
+    .opt-btn.active-blue { border-color: #90cdf4; background: rgba(144,205,244,0.15); color: #90cdf4; }
+    .begin-btn {
+      width: 100%; padding: 14px; border-radius: 12px;
+      background: linear-gradient(135deg, #e8d5a3, #c9a96e);
+      border: none; color: #1a1a2e; font-weight: bold; font-size: 15px;
+      letter-spacing: 2px; font-family: 'Cinzel', serif;
+    }
+
+    /* ── QUIZ ── */
+    #screen-quiz {
+      min-height: 100vh; background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+      display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px;
+    }
+    #quiz-progress-bar-wrap { position: fixed; top: 0; left: 0; right: 0; height: 4px; background: rgba(255,255,255,0.1); }
+    #quiz-progress-bar      { height: 100%; background: linear-gradient(90deg, #e8d5a3, #c9a96e); transition: width 0.3s; }
+    #quiz-counter           { position: fixed; top: 14px; right: 20px; color: rgba(255,255,255,0.5); font-size: 12px; }
+    #quiz-content           { max-width: 520px; width: 100%; }
+    .badge-row { text-align: center; margin-bottom: 14px; }
+    .badge      { background: rgba(232,213,163,0.15); border: 1px solid rgba(232,213,163,0.3); color: #e8d5a3; padding: 3px 12px; border-radius: 20px; font-size: 10px; letter-spacing: 2px; }
+    .badge-new  { margin-left: 6px; background: rgba(144,205,244,0.15); border: 1px solid rgba(144,205,244,0.3); color: #90cdf4; padding: 3px 9px; border-radius: 20px; font-size: 10px; }
+    .badge-weak { margin-left: 6px; background: rgba(241,70,104,0.15); border: 1px solid rgba(241,70,104,0.3); color: #f14668; padding: 3px 9px; border-radius: 20px; font-size: 10px; }
+    .prompt-box {
+      background: rgba(255,255,255,0.05); backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,0.12); border-radius: 20px;
+      padding: 28px 26px; text-align: center; margin-bottom: 14px; position: relative;
+    }
+    .prompt-text-lg { font-size: 58px; font-weight: 300; line-height: 1.3; letter-spacing: 4px; }
+    .prompt-text-sm { font-size: 24px; font-weight: 400; line-height: 1.3; letter-spacing: 1px; }
+    .audio-btn {
+      position: absolute; top: 9px; right: 12px;
+      background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 50%; width: 30px; height: 30px; font-size: 14px;
+      display: flex; align-items: center; justify-content: center; cursor: pointer;
+    }
+    .audio-btn:hover { background: rgba(255,255,255,0.2); transform: scale(1.1); }
+    .dont-know-btn {
+      width: 100%; padding: 9px; border-radius: 10px; margin-bottom: 9px;
+      background: rgba(255,255,255,0.04); border: 1.5px dashed rgba(255,255,255,0.18);
+      color: rgba(255,255,255,0.38); font-size: 12px; letter-spacing: 1px;
+    }
+    .choices-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-bottom: 14px; }
+    .choice-btn {
+      padding: 13px 11px; border-radius: 12px;
+      background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12);
+      color: rgba(255,255,255,0.85); font-size: 12px; text-align: center;
+      line-height: 1.4; transition: all 0.2s; font-family: 'Noto Serif SC', serif; cursor: pointer;
+    }
+    .choice-btn.zh-choice { font-size: 20px; }
+    .choice-btn.answered  { cursor: default; }
+    .choice-btn.is-right  { background: rgba(72,199,142,0.2)!important; border: 1.5px solid #48c78e!important; color: #48c78e!important; }
+    .choice-btn.is-wrong  { background: rgba(241,70,104,0.2)!important; border: 1.5px solid #f14668!important; color: #f14668!important; }
+    .choice-btn.is-faded  { background: rgba(255,255,255,0.02)!important; color: rgba(255,255,255,0.22)!important; border-color: transparent!important; }
+    .reveal-card { border-radius: 16px; padding: 14px 18px; margin-bottom: 10px; }
+    .reveal-card.reveal-skip    { background: rgba(144,205,244,0.08); border: 1px solid rgba(144,205,244,0.35); }
+    .reveal-card.reveal-correct { background: rgba(72,199,142,0.1);   border: 1px solid rgba(72,199,142,0.4); }
+    .reveal-card.reveal-wrong   { background: rgba(241,70,104,0.1);   border: 1px solid rgba(241,70,104,0.4); }
+    .reveal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+    .reveal-status { font-size: 15px; }
+    .reveal-audio-btn { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; padding: 3px 9px; font-size: 12px; cursor: pointer; color: #fff; }
+    .reveal-audio-btn:hover { background: rgba(255,255,255,0.2); }
+    .reveal-fields { display: flex; gap: 18px; flex-wrap: wrap; }
+    .reveal-field-label { font-size: 9px; color: rgba(255,255,255,0.4); margin-bottom: 2px; }
+    .reveal-en { color: #fff; font-size: 12px; }
+    .reveal-py { color: #90cdf4; font-size: 12px; }
+    .reveal-zh { color: #e8d5a3; font-size: 19px; }
+    .next-btn { width: 100%; padding: 12px; border-radius: 12px; background: linear-gradient(135deg, #e8d5a3, #c9a96e); border: none; color: #1a1a2e; font-weight: bold; font-size: 13px; }
+
+    /* ── RESULTS ── */
+    #screen-results { min-height: 100vh; background: linear-gradient(135deg, #0f0c29, #302b63, #24243e); padding: 32px 20px; }
+    .results-inner  { max-width: 560px; margin: 0 auto; }
+    .results-hero   { text-align: center; margin-bottom: 20px; animation: fadeIn 0.4s ease both; }
+    .results-trophy { font-size: 60px; margin-bottom: 4px; }
+    .results-title  { font-family: 'Cinzel', serif; color: #e8d5a3; font-size: 17px; letter-spacing: 3px; margin-bottom: 3px; }
+    .results-pct    { font-size: 46px; font-weight: bold; margin-bottom: 2px; }
+    .results-sub    { color: rgba(255,255,255,0.5); font-size: 11px; }
+    .stats-grid     { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin-bottom: 16px; }
+    .stat-box       { background: rgba(255,255,255,0.05); border-radius: 12px; padding: 12px; text-align: center; }
+    .stat-val       { font-size: 19px; font-weight: bold; }
+    .stat-lbl       { color: rgba(255,255,255,0.4); font-size: 10px; margin-top: 3px; }
+    .breakdown-box  { background: rgba(255,255,255,0.04); border-radius: 16px; padding: 16px; margin-bottom: 14px; }
+    .breakdown-title{ color: rgba(255,255,255,0.6); font-size: 10px; letter-spacing: 2px; margin-bottom: 10px; }
+    .bd-row  { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+    .bd-word { width: 120px; color: rgba(255,255,255,0.8); font-size: 11px; flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .bd-bar-wrap { flex: 1; background: rgba(255,255,255,0.08); border-radius: 4px; height: 5px; }
+    .bd-bar  { height: 100%; border-radius: 4px; }
+    .bd-score{ color: rgba(255,255,255,0.4); font-size: 10px; width: 30px; text-align: right; }
+    .bd-skip { color: #90cdf4; font-size: 10px; }
+    .bd-zh   { width: 22px; font-size: 13px; }
+    .results-btns   { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-bottom: 9px; }
+    .results-btns-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+    .home-btn         { padding: 12px; border-radius: 12px; background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.15); color: rgba(255,255,255,0.8); font-size: 12px; }
+    .export-btn       { padding: 12px; border-radius: 12px; background: linear-gradient(135deg, #e8d5a3, #c9a96e); border: none; color: #1a1a2e; font-weight: bold; font-size: 12px; }
+    .retry-missed-btn { padding: 12px; border-radius: 12px; background: rgba(241,70,104,0.15); border: 1.5px solid rgba(241,70,104,0.4); color: #f14668; font-weight: bold; font-size: 12px; }
+    .new-round-btn    { padding: 12px; border-radius: 12px; background: rgba(72,199,142,0.15); border: 1.5px solid rgba(72,199,142,0.4); color: #48c78e; font-weight: bold; font-size: 12px; }
+
+    /* ── PROGRESS ── */
+    #screen-progress { min-height: 100vh; background: linear-gradient(135deg, #0f0c29, #302b63, #24243e); padding: 26px 20px; }
+    .progress-inner { max-width: 700px; margin: 0 auto; }
+    .prog-header { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
+    .back-btn    { background: none; border: none; color: rgba(255,255,255,0.5); font-size: 20px; cursor: pointer; padding: 4px 8px; }
+    .prog-title  { font-family: 'Cinzel', serif; color: #e8d5a3; font-size: 16px; letter-spacing: 2px; }
+    .tab-row { display: flex; gap: 7px; margin-bottom: 18px; flex-wrap: wrap; }
+    .tab-btn { padding: 6px 14px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.15); background: transparent; color: rgba(255,255,255,0.5); font-size: 11px; letter-spacing: 1px; text-transform: uppercase; }
+    .tab-btn.active { border-color: #e8d5a3; background: rgba(232,213,163,0.15); color: #e8d5a3; }
+    .word-row { background: rgba(255,255,255,0.04); border-radius: 10px; padding: 9px 13px; display: flex; align-items: center; gap: 9px; margin-bottom: 4px; }
+    .word-zh-big { font-size: 19px; width: 30px; text-align: center; flex-shrink: 0; }
+    .word-info   { flex: 1; }
+    .word-en     { color: rgba(255,255,255,0.85); font-size: 11px; }
+    .word-py     { color: rgba(255,255,255,0.4); font-size: 10px; }
+    .word-acc    { text-align: right; }
+    .word-acc-pct{ font-weight: bold; font-size: 13px; }
+    .word-tries  { color: rgba(255,255,255,0.3); font-size: 10px; }
+    .word-nottried{ color: rgba(255,255,255,0.25); font-size: 10px; }
+    .log-row { background: rgba(255,255,255,0.04); border-radius: 10px; padding: 11px 14px; margin-bottom: 5px; display: flex; justify-content: space-between; }
+    .log-date{ font-size: 12px; }
+    .log-sess{ color: rgba(255,255,255,0.35); font-size: 10px; }
+    .log-words{ color: #90cdf4; font-size: 13px; text-align: right; }
+    .log-min { color: rgba(255,255,255,0.4); font-size: 10px; text-align: right; }
+
+    /* ── HEATMAP ── */
+    .heatmap-wrap  { margin-bottom: 18px; }
+    .heatmap-title { color: rgba(255,255,255,0.5); font-size: 11px; letter-spacing: 2px; margin-bottom: 14px; }
+    .heatmap-month { margin-bottom: 16px; }
+    .heatmap-month-label { color: rgba(255,255,255,0.4); font-size: 10px; margin-bottom: 5px; letter-spacing: 1px; text-transform: uppercase; }
+    .heatmap-weeks { display: flex; gap: 3px; }
+    .heatmap-col   { display: flex; flex-direction: column; gap: 3px; }
+    .hm-cell {
+      width: 13px; height: 13px; border-radius: 2px;
+      background: rgba(255,255,255,0.06); position: relative; cursor: default;
+    }
+    .hm-cell[data-tip]:hover::after {
+      content: attr(data-tip); position: absolute; bottom: 17px; left: 50%; transform: translateX(-50%);
+      background: rgba(0,0,0,0.9); color: #fff; font-size: 10px; padding: 3px 8px;
+      border-radius: 6px; white-space: nowrap; pointer-events: none; z-index: 99;
+    }
+    .hm-0 { background: rgba(255,255,255,0.06); }
+    .hm-1 { background: rgba(72,199,142,0.22); }
+    .hm-2 { background: rgba(72,199,142,0.44); }
+    .hm-3 { background: rgba(72,199,142,0.66); }
+    .hm-4 { background: #48c78e; }
+    .heatmap-legend { display: flex; align-items: center; gap: 4px; margin-top: 10px; font-size: 10px; color: rgba(255,255,255,0.35); }
+    .hm-leg { width: 12px; height: 12px; border-radius: 2px; }
+
+    .kbd { display: none; }
+  </style>
+</head>
+<body>
+<div id="app">
+
+<!-- ══ SETUP ══ -->
+<div id="screen-setup">
+  <div class="setup-card">
+    <div class="setup-title-zh">漢字</div>
+    <h1 class="setup-title">CHINESE MASTERY</h1>
+    <p class="setup-sub">Manufacturing Vocabulary Trainer</p>
+
+    <!-- top row: 25% streak | 75% weekly chart -->
+    <div class="home-widgets">
+      <div class="widget-streak">
+        <div class="streak-flame">🔥</div>
+        <div class="widget-val" style="color:#e8d5a3;font-size:26px"><span id="streak-count">0</span></div>
+        <div style="font-size:9px;color:rgba(232,213,163,0.55);line-height:1.4">day<br>streak</div>
+      </div>
+      <div class="widget-chart">
+        <div class="wc-header">
+          <span class="wc-title">Minutes · last 7 days</span>
+          <span class="wc-avg" id="wc-avg-label"></span>
+        </div>
+        <div class="wc-bars" id="wc-bars"></div>
+      </div>
+    </div>
+    <!-- second row: 75% words unlocked | 25% analytics button — mirrors top row, flipped -->
+    <div class="home-widgets" style="grid-template-columns:3fr 1fr; margin-bottom:18px;">
+      <div class="widget-chart" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);">
+        <div class="wc-header" style="margin-bottom:6px">
+          <span class="wc-title">Words Unlocked</span>
+          <span style="font-size:9px;color:#e8d5a3;font-weight:bold">
+            <span id="setup-unlocked">5</span> / <span id="setup-total">0</span>
+          </span>
+        </div>
+        <div class="progress-track" style="margin-bottom:6px"><div class="progress-fill" id="setup-progress-fill" style="width:0%"></div></div>
+        <div class="unlock-note" id="unlock-note" style="margin-top:0;text-align:left"></div>
+      </div>
+      <button class="btn widget-analytics" id="analytics-btn">
+        <span style="font-size:20px">📈</span>
+        <span style="font-size:9px;opacity:0.75;line-height:1.3;text-align:center">Ana&shy;lytics</span>
+      </button>
+    </div>
+    <label class="option-label">Questions per session</label>
+    <div class="option-row" id="qcount-row">
+      <button class="btn opt-btn" data-q="10">10</button>
+      <button class="btn opt-btn active-gold" data-q="20">20</button>
+      <button class="btn opt-btn" data-q="30">30</button>
+      <button class="btn opt-btn" data-q="50">50</button>
+    </div>
+    <label class="option-label">New words today</label>
+    <div class="option-row" id="nwords-row">
+      <button class="btn opt-btn active-blue" data-n="3">3</button>
+      <button class="btn opt-btn" data-n="4">4</button>
+      <button class="btn opt-btn" data-n="5">5</button>
+    </div>
+    <button class="btn begin-btn" id="begin-btn">BEGIN SESSION →</button>
+  </div>
+</div>
+
+<!-- ══ QUIZ ══ -->
+<div id="screen-quiz" class="hidden">
+  <div id="quiz-progress-bar-wrap"><div id="quiz-progress-bar" style="width:0%"></div></div>
+  <button class="btn" id="quiz-back-btn" title="Back to Home" style="position:fixed;top:10px;left:16px;background:none;border:none;color:rgba(255,255,255,0.4);font-size:20px;cursor:pointer;padding:4px 8px;z-index:10">←</button>
+  <div id="quiz-counter">1 / 20</div>
+  <div id="quiz-content">
+    <div class="badge-row">
+      <span class="badge" id="quiz-mode-badge">MODE</span>
+      <span class="badge-new hidden" id="quiz-new-badge">NEW</span>
+      <span class="badge-weak hidden" id="quiz-weak-badge"></span>
+    </div>
+    <div class="prompt-box">
+      <div id="quiz-prompt" class="prompt-text-sm"></div>
+      <button class="audio-btn btn" id="audio-prompt-btn" title="Pronounce">🔊</button>
+    </div>
+    <div class="choices-grid" id="choices-grid"></div>
+    <div class="quiz-bottom-row">
+      <button class="btn dont-know-btn" id="dont-know-btn" style="margin-bottom:0">🤷 Don't Know</button>
+      <button class="btn prev-btn" id="prev-word-btn" disabled>← Prev Word</button>
+    </div>
+    <div class="reveal-card hidden" id="reveal-card">
+      <div class="reveal-header">
+        <div class="reveal-status" id="reveal-status"></div>
+        <button class="reveal-audio-btn btn" id="audio-reveal-btn">🔊 Listen</button>
+      </div>
+      <div class="reveal-fields">
+        <div><div class="reveal-field-label">ENGLISH</div><div class="reveal-en" id="reveal-en"></div></div>
+        <div><div class="reveal-field-label">PINYIN</div><div class="reveal-py" id="reveal-py"></div></div>
+        <div><div class="reveal-field-label">CHARACTER</div><div class="reveal-zh" id="reveal-zh"></div></div>
+      </div>
+    </div>
+    <button class="btn next-btn hidden" id="next-btn">Next →</button>
+  </div>
+</div>
+
+<!-- ══ RESULTS ══ -->
+<div id="screen-results" class="hidden">
+  <div class="results-inner">
+    <div class="results-hero">
+      <div class="results-trophy" id="results-trophy">🏆</div>
+      <div class="results-title">SESSION COMPLETE</div>
+      <div class="results-pct" id="results-pct">0%</div>
+      <div class="results-sub" id="results-sub"></div>
+    </div>
+    <div class="stats-grid" id="stats-grid"></div>
+    <div class="breakdown-box">
+      <div class="breakdown-title">WORD BREAKDOWN</div>
+      <div id="breakdown-list"></div>
+    </div>
+    <div class="results-btns">
+      <button class="btn home-btn" id="home-btn">← Home</button>
+      <button class="btn export-btn" id="export-btn">⬇ Export CSV</button>
+    </div>
+    <div class="results-btns-2" style="margin-top:9px">
+      <button class="btn new-round-btn" id="new-round-btn">🔄 New Round</button>
+      <button class="btn retry-missed-btn hidden" id="retry-missed-btn">🎯 Retry Missed</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PROGRESS ══ -->
+<div id="screen-progress" class="hidden">
+  <div class="progress-inner">
+    <div class="prog-header">
+      <button class="back-btn" id="back-btn">←</button>
+      <span class="prog-title">PROGRESS</span>
+    </div>
+    <div class="tab-row" id="tab-row">
+      <button class="btn tab-btn active" data-tab="heatmap">📅 Calendar</button>
+      <button class="btn tab-btn" data-tab="words">📚 Words</button>
+      <button class="btn tab-btn" data-tab="daily">📆 Daily</button>
+      <button class="btn tab-btn" data-tab="weekly">📈 Weekly</button>
+    </div>
+    <div id="tab-content"></div>
+  </div>
+</div>
+
+<div id="fab-progress-hidden" style="display:none"></div>
+</div><!-- #app -->
+
+<script>
+// ════════════════════════════════════════════════════
+// WORD DATA (192 unique manufacturing terms)
+// ════════════════════════════════════════════════════
+const ALL_WORDS = [{"english":"assembly","pinyin":"Zhuāngpèi","chinese":"装配"},{"english":"inspection","pinyin":"Jiǎnchá","chinese":"检查"},{"english":"lean manufacturing","pinyin":"Jīngyì zhìzào","chinese":"精益制造"},{"english":"operator","pinyin":"Cāozuòyuán","chinese":"操作员"},{"english":"process","pinyin":"Liú chéng","chinese":"流程"},{"english":"documentation","pinyin":"Wéndàng jìlù","chinese":"文件记录"},{"english":"downtime","pinyin":"Tíngjī shíjiān","chinese":"停机时间"},{"english":"standardization","pinyin":"Biāozhǔn huà","chinese":"标准化"},{"english":"supervisor","pinyin":"Zhǔguǎn","chinese":"主管"},{"english":"battery","pinyin":"Diànchí","chinese":"电池"},{"english":"dashboard","pinyin":"Yíbiǎobǎn","chinese":"仪表板"},{"english":"electric vehicle","pinyin":"Diàndòng chē","chinese":"电动车"},{"english":"harshness","pinyin":"Gāng xìng","chinese":"刚性"},{"english":"logistics","pinyin":"Wùliú","chinese":"物流"},{"english":"material","pinyin":"Cáiliào","chinese":"材料"},{"english":"performance","pinyin":"Xìngnéng","chinese":"性能"},{"english":"stamping","pinyin":"Chōngyā","chinese":"冲压"},{"english":"torque","pinyin":"Niǔjǔ","chinese":"扭矩"},{"english":"adhesive","pinyin":"Zhān hé jì","chinese":"粘合剂"},{"english":"alignment","pinyin":"Duìzhǔn","chinese":"对准"},{"english":"assembly line","pinyin":"Zhuāngpèi xiàn","chinese":"装配线"},{"english":"batch production","pinyin":"Pīliàng shēngchǎn","chinese":"批量生产"},{"english":"bending","pinyin":"Wānqū","chinese":"弯曲"},{"english":"bolting","pinyin":"Luóbó jiējié","chinese":"螺栓连接"},{"english":"bottleneck","pinyin":"Píngjǐng","chinese":"瓶颈"},{"english":"calibration","pinyin":"Jiàozhǔn","chinese":"校准"},{"english":"casting","pinyin":"Zhùzào","chinese":"铸造"},{"english":"coating","pinyin":"Túcéng","chinese":"涂层"},{"english":"conveyor belt","pinyin":"Chuánsòngdài","chinese":"传送带"},{"english":"corrective action","pinyin":"Jiūzhèng cuòshī","chinese":"纠正措施"},{"english":"curing","pinyin":"Gùhuà","chinese":"固化"},{"english":"cutting","pinyin":"Qiēgē","chinese":"切割"},{"english":"cycle time","pinyin":"Xúnhuán shíjiān","chinese":"循环时间"},{"english":"data collection","pinyin":"Shùjù shōují","chinese":"数据收集"},{"english":"deburring","pinyin":"Qù máocì","chinese":"去毛刺"},{"english":"defect","pinyin":"Quēxiàn","chinese":"缺陷"},{"english":"dimensional inspection","pinyin":"Chǐcùn jiǎnchá","chinese":"尺寸检查"},{"english":"drilling","pinyin":"Zuànkǒng","chinese":"钻孔"},{"english":"drying","pinyin":"Gānzào","chinese":"干燥"},{"english":"durability test","pinyin":"Nàijiǔxìng cèshì","chinese":"耐久性测试"},{"english":"end-of-line test","pinyin":"Zhōng jiǎn","chinese":"终检"},{"english":"ergonomic assessment","pinyin":"Réntǐ gōngchéngxué pínggū","chinese":"人体工程学评估"},{"english":"error-proofing","pinyin":"Fáng cuò","chinese":"防错"},{"english":"failure analysis","pinyin":"Gùzhàng fēnxī","chinese":"故障分析"},{"english":"fastening","pinyin":"Jǐngù","chinese":"紧固"},{"english":"first article inspection","pinyin":"Shǒujiàn jiǎnchá","chinese":"首件检查"},{"english":"forging","pinyin":"Duànzào","chinese":"锻造"},{"english":"forming","pinyin":"Chéngxíng","chinese":"成型"},{"english":"functional test","pinyin":"Gōngnéng cèshì","chinese":"功能测试"},{"english":"grinding","pinyin":"Yánmó","chinese":"研磨"},{"english":"job scheduling","pinyin":"Zuòyè tiáodù","chinese":"作业调度"},{"english":"just-in-time","pinyin":"Zhǔnshí shēngchǎn","chinese":"准时生产"},{"english":"lead time","pinyin":"Jiāohuò shíjiān","chinese":"交货时间"},{"english":"line balancing","pinyin":"Shēngchǎnxiàn pínghéng","chinese":"生产线平衡"},{"english":"machining","pinyin":"Jī jiāgōng","chinese":"机加工"},{"english":"mass production","pinyin":"Dàguīmó shēngchǎn","chinese":"大规模生产"},{"english":"material handling","pinyin":"Cáiliào bānyùn","chinese":"材料搬运"},{"english":"molding","pinyin":"Mó sù","chinese":"模塑"},{"english":"non-conformance","pinyin":"Bù hégé","chinese":"不合格"},{"english":"painting","pinyin":"Pēnqī","chinese":"喷漆"},{"english":"part identification","pinyin":"Língjiàn shíbié","chinese":"零件识别"},{"english":"pilot run","pinyin":"Shì yùnxíng","chinese":"试运行"},{"english":"polishing","pinyin":"Pāoguāng","chinese":"抛光"},{"english":"precision","pinyin":"Jīngdù","chinese":"精度"},{"english":"pressing","pinyin":"Yāzhì","chinese":"压制"},{"english":"preventive maintenance","pinyin":"Yùfáng xìng wéihù","chinese":"预防性维护"},{"english":"prototype","pinyin":"Yuánxíng","chinese":"原型"},{"english":"rework","pinyin":"Fǎngōng","chinese":"返工"},{"english":"riveting","pinyin":"Mǎojiē","chinese":"铆接"},{"english":"robotics","pinyin":"Jīqìrén","chinese":"机器人"},{"english":"root cause analysis","pinyin":"Gēnběn yuányīn fēnxī","chinese":"根本原因分析"},{"english":"safety","pinyin":"Ānquán","chinese":"安全"},{"english":"scrap","pinyin":"Fèipǐn","chinese":"废品"},{"english":"sealing","pinyin":"Mìfēng","chinese":"密封"},{"english":"six sigma","pinyin":"Liù xī gē mǎ","chinese":"六西格玛"},{"english":"statistical process control","pinyin":"Tǒngjì guòchéng kòngzhì","chinese":"统计过程控制"},{"english":"takt time","pinyin":"Jiébài shíjiān","chinese":"节拍时间"},{"english":"technician","pinyin":"Jìshùyuán","chinese":"技术员"},{"english":"testing","pinyin":"Cèshì","chinese":"测试"},{"english":"tolerance","pinyin":"Gōngchā","chinese":"公差"},{"english":"torquing","pinyin":"Niǔjù kòngzhì","chinese":"扭矩控制"},{"english":"traceability","pinyin":"Kě zhuīsù xìng","chinese":"可追溯性"},{"english":"trimming","pinyin":"Xiūbiān","chinese":"修边"},{"english":"troubleshooting","pinyin":"Gùzhàng páichú","chinese":"故障排除"},{"english":"visual management","pinyin":"Kěshì huà guǎnlǐ","chinese":"可视化管理"},{"english":"welding","pinyin":"Hànjiē","chinese":"焊接"},{"english":"work instruction","pinyin":"Zuòyè zhǐdǎo shū","chinese":"作业指导书"},{"english":"work order","pinyin":"Gōngdān","chinese":"工单"},{"english":"workload distribution","pinyin":"Gōngzuò fùhè fēnpèi","chinese":"工作负荷分配"},{"english":"workstation","pinyin":"Gōngzuòzhàn","chinese":"工作站"},{"english":"automation","pinyin":"Zìdònghuà","chinese":"自动化"},{"english":"continuous improvement","pinyin":"Chíxù gǎijìn","chinese":"持续改进"},{"english":"cost reduction","pinyin":"Chéngběn xuējiǎn","chinese":"成本削减"},{"english":"efficiency","pinyin":"Xiàolǜ","chinese":"效率"},{"english":"ergonomics","pinyin":"Réntǐ gōngchéngxué","chinese":"人体工程学"},{"english":"inventory","pinyin":"Kùcún","chinese":"库存"},{"english":"kaizen","pinyin":"Gǎishàn","chinese":"改善"},{"english":"kanban","pinyin":"Kànbǎn","chinese":"看板"},{"english":"manufacturing","pinyin":"Zhìzào","chinese":"制造"},{"english":"operator efficiency","pinyin":"Cāozuòyuán xiàolǜ","chinese":"操作员效率"},{"english":"operator training","pinyin":"Cāozuòyuán péixùn","chinese":"操作员培训"},{"english":"process monitoring","pinyin":"Liú chéng jiān kòng","chinese":"流程监控"},{"english":"process validation","pinyin":"Liú chéng yàn zhèng","chinese":"流程验证"},{"english":"production","pinyin":"Shēngchǎn","chinese":"生产"},{"english":"productivity","pinyin":"Shēngchǎnlǜ","chinese":"生产率"},{"english":"quality control","pinyin":"Zhìliàng kòngzhì","chinese":"质量控制"},{"english":"standard operating procedure","pinyin":"Biāozhǔn cāozuò chéngxù","chinese":"标准操作程序"},{"english":"standard time","pinyin":"Biāozhǔn shíjiān","chinese":"标准时间"},{"english":"supplier","pinyin":"Gōngyìng shāng","chinese":"供应商"},{"english":"supply chain","pinyin":"Gōngyìng liàn","chinese":"供应链"},{"english":"accelerator","pinyin":"Jiāsùqì","chinese":"加速器"},{"english":"aerodynamics","pinyin":"Kōngqì dònglì xué","chinese":"空气动力学"},{"english":"aftermarket","pinyin":"Shòuhòu shìchǎng","chinese":"售后市场"},{"english":"airbag","pinyin":"Ānquán qìnáng","chinese":"安全气囊"},{"english":"alloy","pinyin":"Héjīn","chinese":"合金"},{"english":"alternator","pinyin":"Jiāoliú fādiànjī","chinese":"交流发电机"},{"english":"autonomous","pinyin":"Zìdòng jiàshǐ","chinese":"自动驾驶"},{"english":"axle","pinyin":"Chēzhóu","chinese":"车轴"},{"english":"battery pack","pinyin":"Diànchí zǔ","chinese":"电池组"},{"english":"bearing","pinyin":"Zhóuchéng","chinese":"轴承"},{"english":"brake","pinyin":"Shāchē","chinese":"刹车"},{"english":"camshaft","pinyin":"Tūlúnzhóu","chinese":"凸轮轴"},{"english":"carbon fiber","pinyin":"Tàn xiānwéi","chinese":"碳纤维"},{"english":"charger","pinyin":"Chōngdiànqì","chinese":"充电器"},{"english":"chassis","pinyin":"Dìpán","chinese":"底盘"},{"english":"clutch","pinyin":"Líhéqì","chinese":"离合器"},{"english":"comfort","pinyin":"Shūshì","chinese":"舒适"},{"english":"compliance","pinyin":"Héguī","chinese":"合规"},{"english":"connectivity","pinyin":"Liánjié xìng","chinese":"连接性"},{"english":"coolant","pinyin":"Lěngquè yè","chinese":"冷却液"},{"english":"crankshaft","pinyin":"Qūzhóu","chinese":"曲轴"},{"english":"crash test","pinyin":"Pèngzhuàng cèshì","chinese":"碰撞测试"},{"english":"customer service","pinyin":"Kèhù fúwù","chinese":"客户服务"},{"english":"cylinder","pinyin":"Qìgāng","chinese":"气缸"},{"english":"diagnostics","pinyin":"Zhěnduàn","chinese":"诊断"},{"english":"differential","pinyin":"Chā sù qì","chinese":"差速器"},{"english":"drive shaft","pinyin":"Chuándòng zhóu","chinese":"传动轴"},{"english":"durability","pinyin":"Nàijiǔxìng","chinese":"耐久性"},{"english":"ECU","pinyin":"Diànzǐ kòngzhì dān yuán","chinese":"电子控制单元"},{"english":"electronics","pinyin":"Diànzǐ","chinese":"电子"},{"english":"emission","pinyin":"Páifàng","chinese":"排放"},{"english":"engine","pinyin":"Fādòngjī","chinese":"发动机"},{"english":"exhaust","pinyin":"Páiqì","chinese":"排气"},{"english":"firmware","pinyin":"Gùjiàn","chinese":"固件"},{"english":"fuel","pinyin":"Ránliào","chinese":"燃料"},{"english":"fuel economy","pinyin":"Rányóu jīngjì xìng","chinese":"燃油经济性"},{"english":"fuel injector","pinyin":"Rányóu pēnshè qì","chinese":"燃油喷射器"},{"english":"gasket","pinyin":"Diànpiàn","chinese":"垫片"},{"english":"gear","pinyin":"Chǐlún","chinese":"齿轮"},{"english":"horsepower","pinyin":"Mǎlì","chinese":"马力"},{"english":"hybrid","pinyin":"Hùnhé dònglì","chinese":"混合动力"},{"english":"ignition","pinyin":"Diǎnhuǒ","chinese":"点火"},{"english":"infotainment","pinyin":"Xìnxī yúlè","chinese":"信息娱乐"},{"english":"lubrication","pinyin":"Rùnhuá","chinese":"润滑"},{"english":"maintenance","pinyin":"Wéihù","chinese":"维护"},{"english":"navigation","pinyin":"Dǎoháng","chinese":"导航"},{"english":"noise","pinyin":"Zàoyīn","chinese":"噪音"},{"english":"OEM","pinyin":"Yuánshǐ shèbèi zhìzàoshāng","chinese":"原始设备制造商"},{"english":"piston","pinyin":"Huósāi","chinese":"活塞"},{"english":"plastic molding","pinyin":"Sùliào mójù","chinese":"塑料模具"},{"english":"powertrain","pinyin":"Dònglì zǒngchéng","chinese":"动力总成"},{"english":"procurement","pinyin":"Cǎigòu","chinese":"采购"},{"english":"radiator","pinyin":"Sànrèqì","chinese":"散热器"},{"english":"recall","pinyin":"Zhàohuí","chinese":"召回"},{"english":"regulations","pinyin":"Fǎguī","chinese":"法规"},{"english":"sensor","pinyin":"Chuángǎnqì","chinese":"传感器"},{"english":"shock absorber","pinyin":"Jiǎnzhèngqì","chinese":"减震器"},{"english":"software","pinyin":"Ruǎnjiàn","chinese":"软件"},{"english":"spark plug","pinyin":"Huǒhuāsāi","chinese":"火花塞"},{"english":"speedometer","pinyin":"Sùdù jì","chinese":"速度计"},{"english":"steering","pinyin":"Zhuǎnxiàng","chinese":"转向"},{"english":"suspension","pinyin":"Xuánguà","chinese":"悬挂"},{"english":"telematics","pinyin":"Chē lián wǎng","chinese":"车联网"},{"english":"tire","pinyin":"Lúntāi","chinese":"轮胎"},{"english":"transmission","pinyin":"Biànsùqì","chinese":"变速器"},{"english":"turbocharger","pinyin":"Wōlún zēngyā qì","chinese":"涡轮增压器"},{"english":"valve","pinyin":"Fámén","chinese":"阀门"},{"english":"vibration","pinyin":"Zhèndòng","chinese":"振动"},{"english":"warranty","pinyin":"Bǎoxiū","chinese":"保修"},{"english":"wiring","pinyin":"Bùxiàn","chinese":"布线"}];
+const WORDS = ALL_WORDS.filter((w,i,a)=>a.findIndex(x=>x.english===w.english&&x.chinese===w.chinese)===i);
+
+const MODES = [
+  {id:"en-zh",  label:"English → Chinese",  prompt:"chinese", show:"english"},
+  {id:"zh-en",  label:"Chinese → English",  prompt:"english", show:"chinese"},
+  {id:"en-py",  label:"English → Pinyin",   prompt:"pinyin",  show:"english"},
+  {id:"py-en",  label:"Pinyin → English",   prompt:"english", show:"pinyin"},
+  {id:"zh-en2", label:"Character → English",prompt:"english", show:"chinese"},
+  {id:"en-zh2", label:"English → Character",prompt:"chinese", show:"english"},
+];
+
+// ════════════════════════════════════════════════════
+// STATE  (schema v3)
+// ════════════════════════════════════════════════════
+const STORAGE_KEY = "zh_v3";
+
+function todayKey(){ return new Date().toISOString().slice(0,10); }
+
+function loadState(){
+  try{ const s=localStorage.getItem(STORAGE_KEY); return s?JSON.parse(s):null; }catch{return null;}
+}
+function saveState(st){ try{localStorage.setItem(STORAGE_KEY,JSON.stringify(st));}catch{} }
+
+function getInitialState(){
+  const old=loadState();
+  if(!old) return {unlockedCount:5,wordStats:{},srsData:{},dailyLog:{},streak:0,lastPracticeDate:null};
+  if(!old.srsData)          old.srsData={};
+  if(old.streak===undefined) old.streak=0;
+  if(!old.lastPracticeDate)  old.lastPracticeDate=null;
+  return old;
+}
+let APP=getInitialState();
+
+// ── per-word helpers ──────────────────────────────
+function wk(w){ return w.english+"|"+w.chinese; }
+function getWordStats(w){ return APP.wordStats[wk(w)]||{correct:0,total:0,lastSeen:null}; }
+function getSRS(w){ return APP.srsData[wk(w)]||{recentResults:[],lastWrong:null,weight:1}; }
+
+// Record answer → update wordStats + SRS weight
+function recordAnswer(w, correct){
+  const k=wk(w);
+  const ws=APP.wordStats[k]||{correct:0,total:0,lastSeen:null};
+  ws.correct+=(correct?1:0); ws.total+=1; ws.lastSeen=todayKey();
+  APP.wordStats[k]=ws;
+
+  const srs=getSRS(w);
+  srs.recentResults.push(correct);
+  if(srs.recentResults.length>10) srs.recentResults.shift();
+  if(!correct) srs.lastWrong=todayKey();
+  // SRS weight: each wrong in last 5 adds 0.8 → max weight 5
+  const wrong5=srs.recentResults.slice(-5).filter(x=>!x).length;
+  srs.weight=1+wrong5*0.8;
+  APP.srsData[k]=srs;
+}
+
+function getAccuracy(w){
+  const s=getWordStats(w); return s.total===0?null:Math.round((s.correct/s.total)*100);
+}
+
+// A word is "ready to graduate" when last 5 results contain ≥ 4 correct (80%)
+function isWordReady(w){
+  const srs=getSRS(w);
+  if(srs.recentResults.length<5) return false;
+  return srs.recentResults.slice(-5).filter(Boolean).length>=4;
+}
+
+// After session: unlock next batch only if ALL current new words are ready
+function tryUnlockWords(newWordsCount){
+  if(APP.unlockedCount>=WORDS.length) return;
+  const newWords=WORDS.slice(Math.max(0,APP.unlockedCount-newWordsCount), APP.unlockedCount);
+  if(newWords.length>0 && newWords.every(w=>isWordReady(w))){
+    APP.unlockedCount=Math.min(WORDS.length, APP.unlockedCount+newWordsCount);
+  }
+}
+
+// ── streak (derived from dailyLog) ───────────────
+function calcStreak(){
+  const today=todayKey();
+  let streak=0;
+  const check=new Date();
+  for(let i=0;i<365;i++){
+    const k=check.toISOString().slice(0,10);
+    if(APP.dailyLog[k]) { streak++; check.setDate(check.getDate()-1); }
+    else if(k===today)  { check.setDate(check.getDate()-1); } // today not yet done is ok
+    else break;
+  }
+  return streak;
+}
+
+// ════════════════════════════════════════════════════
+// HELPERS
+// ════════════════════════════════════════════════════
+function shuffle(arr){
+  const a=[...arr];
+  for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
+  return a;
+}
+const el=id=>document.getElementById(id);
+const show=id=>el(id).classList.remove("hidden");
+const hide=id=>el(id).classList.add("hidden");
+const setText=(id,t)=>{ el(id).textContent=t; };
+const setHtml=(id,h)=>{ el(id).innerHTML=h; };
+
+function showScreen(name){
+  ["setup","quiz","results","progress"].forEach(s=>{
+    el("screen-"+s).classList.toggle("hidden",s!==name);
+  });
+}
+
+// ════════════════════════════════════════════════════
+// AUDIO  — Web Speech API (no internet needed)
+// ════════════════════════════════════════════════════
+let currentWord=null, currentMode=null;
+
+function speak(text,lang){
+  if(!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(text);
+  u.lang=lang||"zh-CN"; u.rate=0.82;
+  window.speechSynthesis.speak(u);
+}
+
+el("audio-prompt-btn").addEventListener("click",()=>{
+  if(!currentWord||!currentMode) return;
+  speak(currentWord[currentMode.show], currentMode.show==="chinese"?"zh-CN":"en-US");
+});
+el("audio-reveal-btn").addEventListener("click",()=>{
+  if(!currentWord) return;
+  // always pronounce Chinese on reveal
+  speak(currentWord.chinese,"zh-CN");
+});
+
+// ════════════════════════════════════════════════════
+// SESSION BUILDER  — SRS weighted
+// ════════════════════════════════════════════════════
+function buildSession(questionCount, newWordsCount, retryWords){
+  // Retry-missed mode: drill only the wrong words
+  if(retryWords && retryWords.length>0){
+    const qs=[];
+    const pool=shuffle(retryWords);
+    for(let i=0;qs.length<questionCount;i++){
+      const word=pool[i%pool.length];
+      const mode=MODES[qs.length%MODES.length];
+      const others=shuffle(WORDS.filter(w=>w.english!==word.english||w.chinese!==word.chinese)).slice(0,3);
+      qs.push({word,mode,choices:shuffle([word,...others]),isNew:false,isWeak:true});
+    }
+    return qs;
+  }
+
+  const unlocked =WORDS.slice(0,APP.unlockedCount);
+  const newWords =WORDS.slice(Math.max(0,APP.unlockedCount-newWordsCount),APP.unlockedCount);
+  const prevWords=unlocked.slice(0,Math.max(0,APP.unlockedCount-newWordsCount));
+
+  const maxNew =Math.min(newWords.length*3,Math.floor(questionCount*0.4));
+  const maxPrev=questionCount-maxNew;
+
+  // Build SRS-weighted previous pool: wrong words get extra copies
+  const weightedPrev=[];
+  prevWords.forEach(w=>{
+    const copies=Math.ceil(getSRS(w).weight); // 1-5
+    for(let i=0;i<copies;i++) weightedPrev.push(w);
+  });
+
+  const sNew =shuffle(newWords);
+  const sPrev=shuffle(weightedPrev);
+  const qs=[]; let nNew=0,nPrev=0;
+
+  for(let i=0;qs.length<questionCount;i++){
+    const useNew=nNew<maxNew&&(nPrev>=maxPrev||Math.random()<0.4);
+    const pool  =useNew?sNew:(sPrev.length>0?sPrev:sNew);
+    if(!pool.length) break;
+    const word=pool[i%pool.length];
+    const mode=MODES[qs.length%MODES.length];
+    const others=shuffle(WORDS.filter(w=>w.english!==word.english||w.chinese!==word.chinese)).slice(0,3);
+    const isWeak=!useNew&&getSRS(word).recentResults.slice(-3).filter(x=>!x).length>=2;
+    qs.push({word,mode,choices:shuffle([word,...others]),isNew:useNew,isWeak});
+    if(useNew)nNew++;else nPrev++;
+  }
+  return qs;
+}
+
+// ════════════════════════════════════════════════════
+// SETUP SCREEN
+// ════════════════════════════════════════════════════
+let cfg={questionCount:20,newWordsCount:3};
+
+function renderSetup(){
+  setText("setup-unlocked",APP.unlockedCount);
+  setText("setup-total",WORDS.length);
+  el("setup-progress-fill").style.width=((APP.unlockedCount/WORDS.length)*100)+"%";
+
+  const streak=calcStreak();
+  setText("streak-count",streak);
+
+  // Unlock note
+  const newWords=WORDS.slice(Math.max(0,APP.unlockedCount-cfg.newWordsCount),APP.unlockedCount);
+  if(APP.unlockedCount<WORDS.length && newWords.length>0){
+    const readyCount=newWords.filter(w=>isWordReady(w)).length;
+    setText("unlock-note", readyCount===newWords.length
+      ?"✓ New words ready! Next batch unlocks after this session."
+      :`Next unlock: ${readyCount}/${newWords.length} current words need 80% (5+ answers)`);
+  } else if(APP.unlockedCount>=WORDS.length){
+    setText("unlock-note","🎉 All "+WORDS.length+" words unlocked!");
+  } else { setText("unlock-note",""); }
+
+  el("qcount-row").querySelectorAll(".opt-btn").forEach(b=>{
+    b.classList.toggle("active-gold",+b.dataset.q===cfg.questionCount);
+  });
+  el("nwords-row").querySelectorAll(".opt-btn").forEach(b=>{
+    b.classList.toggle("active-blue",+b.dataset.n===cfg.newWordsCount);
+  });
+
+  // ── Weekly minutes chart ──────────────────────────
+  const DAY_NAMES=["Su","Mo","Tu","We","Th","Fr","Sa"];
+  const today=new Date();
+  const days7=Array.from({length:7},(_,i)=>{
+    const d=new Date(today); d.setDate(today.getDate()-(6-i));
+    return d.toISOString().slice(0,10);
+  });
+  const mins7=days7.map(d=>(APP.dailyLog[d]||{}).minutes||0);
+  const maxMin=Math.max(...mins7,1);
+
+  // Previous week average for comparison line
+  const prevDays=Array.from({length:7},(_,i)=>{
+    const d=new Date(today); d.setDate(today.getDate()-(13-i));
+    return d.toISOString().slice(0,10);
+  });
+  const prevAvg=prevDays.reduce((s,d)=>s+((APP.dailyLog[d]||{}).minutes||0),0)/7;
+  const thisWeekTotal=mins7.reduce((a,b)=>a+b,0);
+  const avgLine=prevAvg>0?Math.round(prevAvg*10)/10:null;
+
+  // Render label
+  setText("wc-avg-label", avgLine!==null
+    ?`prev week avg: ${avgLine} min/day`
+    :"This week: "+thisWeekTotal+" min");
+
+  // Render bars
+  const barsEl=el("wc-bars"); barsEl.innerHTML="";
+  days7.forEach((day,i)=>{
+    const mins=mins7[i];
+    const heightPct=Math.round((mins/maxMin)*100);
+    const isToday=day===today.toISOString().slice(0,10);
+    const barColor=isToday?"#e8d5a3":mins>0?"rgba(72,199,142,0.7)":"rgba(255,255,255,0.08)";
+    const col=document.createElement("div"); col.className="wc-col";
+
+    // Avg line indicator as a thin line across the chart (show on last bar)
+    let avgMarker="";
+    if(i===6 && avgLine!==null && maxMin>0){
+      const avgPct=Math.min(100,Math.round((avgLine/maxMin)*100));
+      avgMarker=`<div style="position:absolute;bottom:${avgPct}%;left:0;right:0;height:1px;background:rgba(241,70,104,0.6);pointer-events:none"></div>`;
+    }
+
+    col.innerHTML=`
+      <div class="wc-bar-wrap" style="position:relative">
+        <div class="wc-bar" style="height:${heightPct}%;background:${barColor}" title="${mins} min"></div>
+        ${avgMarker}
+      </div>
+      <div class="wc-day" style="color:${isToday?"#e8d5a3":"rgba(255,255,255,0.3)"}">${DAY_NAMES[new Date(day+"T12:00:00").getDay()]}</div>`;
+    barsEl.appendChild(col);
+  });
+}
+
+el("qcount-row").addEventListener("click",e=>{
+  const b=e.target.closest(".opt-btn"); if(!b)return;
+  cfg.questionCount=+b.dataset.q; renderSetup();
+});
+el("nwords-row").addEventListener("click",e=>{
+  const b=e.target.closest(".opt-btn"); if(!b)return;
+  cfg.newWordsCount=+b.dataset.n; renderSetup();
+});
+el("begin-btn").addEventListener("click",()=>{
+  startQuiz(buildSession(cfg.questionCount,cfg.newWordsCount,null));
+});
+el("analytics-btn").addEventListener("click",()=>renderProgress("heatmap"));
+
+// ════════════════════════════════════════════════════
+// QUIZ SCREEN
+// ════════════════════════════════════════════════════
+let quiz={questions:[],idx:0,results:[],answered:false,startTime:0};
+
+function startQuiz(questions){
+  quiz={questions,idx:0,results:[],answered:false,startTime:Date.now()};
+  showScreen("quiz");
+  renderQuestion();
+}
+
+function renderQuestion(){
+  const {questions,idx}=quiz;
+  const q=questions[idx];
+  const {word,mode,isNew}=q;
+  currentWord=word; currentMode=mode;
+
+  el("quiz-progress-bar").style.width=(idx/questions.length*100)+"%";
+  setText("quiz-counter",(idx+1)+" / "+questions.length);
+  setText("quiz-mode-badge",mode.label.toUpperCase());
+  el("quiz-new-badge").classList.toggle("hidden",!isNew);
+
+  // accuracy % badge
+  const acc=getAccuracy(word);
+  const weakBadge=el("quiz-weak-badge");
+  if(!isNew && acc!==null){
+    weakBadge.textContent=acc+"%";
+    weakBadge.style.background=acc>=80?"rgba(72,199,142,0.15)":acc>=50?"rgba(232,213,163,0.15)":"rgba(241,70,104,0.15)";
+    weakBadge.style.borderColor=acc>=80?"rgba(72,199,142,0.4)":acc>=50?"rgba(232,213,163,0.4)":"rgba(241,70,104,0.4)";
+    weakBadge.style.color=acc>=80?"#48c78e":acc>=50?"#e8d5a3":"#f14668";
+    weakBadge.classList.remove("hidden");
+  } else { weakBadge.classList.add("hidden"); }
+
+  const promptEl=el("quiz-prompt");
+  promptEl.textContent=word[mode.show];
+  promptEl.className=(mode.show==="chinese")?"prompt-text-lg":"prompt-text-sm";
+
+  // Prev button: enabled only when not on first question
+  el("prev-word-btn").disabled=(idx===0);
+
+  hide("reveal-card"); hide("next-btn");
+  quiz.answered=false;
+
+  const grid=el("choices-grid"); grid.innerHTML="";
+  const isZh=(mode.prompt==="chinese");
+  q.choices.forEach(choice=>{
+    const btn=document.createElement("button");
+    btn.className="btn choice-btn"+(isZh?" zh-choice":"");
+    btn.textContent=choice[mode.prompt];
+    btn.addEventListener("click",()=>handleChoice(choice));
+    grid.appendChild(btn);
+  });
+
+  // Show/enable the bottom row buttons
+  el("dont-know-btn").disabled=false;
+  el("dont-know-btn").style.opacity="1";
+
+  const content=el("quiz-content");
+  content.className="animate-in"; void content.offsetWidth;
+}
+
+function handleDontKnow(){
+  if(quiz.answered)return;
+  quiz.answered=true;
+  const q=quiz.questions[quiz.idx];
+  quiz.results.push({word:q.word,correct:false,mode:q.mode});
+  recordAnswer(q.word,false);
+  el("dont-know-btn").disabled=true; el("dont-know-btn").style.opacity="0.4";
+  el("prev-word-btn").disabled=true;
+  applyAnsweredStyles(null,true,q);
+  showReveal(true,false,q.word);
+  el("quiz-content").className="wrong-shake";
+  // auto-play Chinese on don't-know so user hears the answer
+  setTimeout(()=>speak(q.word.chinese,"zh-CN"),400);
+}
+
+function handleChoice(choice){
+  if(quiz.answered)return;
+  quiz.answered=true;
+  const q=quiz.questions[quiz.idx];
+  const isCorrect=choice[q.mode.prompt]===q.word[q.mode.prompt];
+  quiz.results.push({word:q.word,correct:isCorrect,mode:q.mode});
+  recordAnswer(q.word,isCorrect);
+  el("dont-know-btn").disabled=true; el("dont-know-btn").style.opacity="0.4";
+  el("prev-word-btn").disabled=true;
+  applyAnsweredStyles(choice,false,q);
+  showReveal(false,isCorrect,q.word);
+  el("quiz-content").className=isCorrect?"correct-pulse":"wrong-shake";
+  // auto-play Chinese pronunciation on correct answer
+  if(isCorrect) setTimeout(()=>speak(q.word.chinese,"zh-CN"),350);
+}
+
+function applyAnsweredStyles(chosen,skipped,q){
+  const correct=q.word[q.mode.prompt];
+  el("choices-grid").querySelectorAll(".choice-btn").forEach(btn=>{
+    btn.classList.add("answered");
+    const v=btn.textContent;
+    if(v===correct) btn.classList.add("is-right");
+    else if(!skipped&&chosen&&v===chosen[q.mode.prompt]) btn.classList.add("is-wrong");
+    else btn.classList.add("is-faded");
+  });
+}
+
+function showReveal(skipped,isCorrect,word){
+  const card=el("reveal-card");
+  card.className="reveal-card "+(skipped?"reveal-skip":isCorrect?"reveal-correct":"reveal-wrong");
+  const st=el("reveal-status");
+  st.textContent=skipped?"📖 Answer Revealed":isCorrect?"✓ Correct!":"✗ Incorrect";
+  st.style.color=skipped?"#90cdf4":isCorrect?"#48c78e":"#f14668";
+  setText("reveal-en",word.english); setText("reveal-py",word.pinyin); setText("reveal-zh",word.chinese);
+  show("reveal-card");
+  el("next-btn").textContent=(quiz.idx+1>=quiz.questions.length)?"Finish Session →":"Next →";
+  show("next-btn");
+}
+
+el("dont-know-btn").addEventListener("click",handleDontKnow);
+el("quiz-back-btn").addEventListener("click",()=>{ renderSetup(); showScreen("setup"); });
+
+// Prev word: undo last result, go back one question
+el("prev-word-btn").addEventListener("click",()=>{
+  if(quiz.idx===0) return;
+  // Remove the last recorded result if it was for the current-1 question
+  if(quiz.results.length>0){
+    const last=quiz.results[quiz.results.length-1];
+    // Undo the stat recorded for that answer
+    const k=wk(last.word);
+    const ws=APP.wordStats[k];
+    if(ws && ws.total>0){
+      ws.correct-=(last.correct?1:0); ws.total-=1;
+      if(ws.total===0){ ws.lastSeen=null; }
+      APP.wordStats[k]=ws;
+    }
+    const srs=APP.srsData[k];
+    if(srs && srs.recentResults.length>0){
+      srs.recentResults.pop();
+      const wrong5=srs.recentResults.slice(-5).filter(x=>!x).length;
+      srs.weight=1+wrong5*0.8;
+      APP.srsData[k]=srs;
+    }
+    quiz.results.pop();
+  }
+  quiz.idx--;
+  quiz.answered=false;
+  renderQuestion();
+});
+
+el("next-btn").addEventListener("click",()=>{
+  quiz.answered=false; quiz.idx++;
+  if(quiz.idx>=quiz.questions.length) finishSession();
+  else renderQuestion();
+});
+
+// ════════════════════════════════════════════════════
+// FINISH SESSION
+// ════════════════════════════════════════════════════
+function finishSession(){
+  const minutes=Math.round((Date.now()-quiz.startTime)/60000*10)/10;
+  const results=quiz.results;
+
+  // SRS-gated unlock
+  tryUnlockWords(cfg.newWordsCount);
+
+  // Daily log
+  const today=todayKey();
+  const prev=APP.dailyLog[today]||{sessions:0,words:0,minutes:0};
+  const unique=new Set(results.map(r=>r.word.english)).size;
+  APP.dailyLog[today]={
+    sessions:prev.sessions+1, words:prev.words+unique,
+    minutes:Math.round((prev.minutes+minutes)*10)/10,
+  };
+
+  saveState(APP);
+  renderResults(results,minutes);
+}
+
+// ════════════════════════════════════════════════════
+// RESULTS SCREEN
+// ════════════════════════════════════════════════════
+function renderResults(results,minutes){
+  const correct  =results.filter(r=>r.correct).length;
+  const wrongWords=[...new Map(results.filter(r=>!r.correct).map(r=>[wk(r.word),r.word])).values()];
+  const pct      =Math.round((correct/results.length)*100);
+
+  setText("results-trophy",pct>=80?"🏆":pct>=60?"👍":"💪");
+  const pctEl=el("results-pct");
+  pctEl.textContent=pct+"%";
+  pctEl.style.color=pct>=80?"#48c78e":pct>=60?"#e8d5a3":"#f14668";
+  setText("results-sub",correct+"/"+results.length+" correct · "+minutes+" min");
+
+  const stats=[
+    {label:"Accuracy",value:pct+"%",    color:"#e8d5a3"},
+    {label:"Correct", value:correct,    color:"#48c78e"},
+    {label:"Wrong",   value:results.length-correct, color:"#f14668"},
+    {label:"Time",    value:minutes+"m",color:"#a78bfa"},
+  ];
+  setHtml("stats-grid",stats.map(s=>
+    `<div class="stat-box"><div class="stat-val" style="color:${s.color}">${s.value}</div><div class="stat-lbl">${s.label}</div></div>`
+  ).join(""));
+
+  // Word breakdown: unique words in this session, sorted worst first
+  const seenWords=[...new Map(results.map(r=>[wk(r.word),r.word])).values()];
+  seenWords.sort((a,b)=>{
+    const accA=getAccuracy(a)??0, accB=getAccuracy(b)??0;
+    return accA-accB;
+  });
+  setHtml("breakdown-list", seenWords.map(word=>{
+    // Use cumulative (all-time) accuracy for this word
+    const cumulAcc=getAccuracy(word);
+    const pct2=cumulAcc??0;
+    const bc=pct2>=80?"#48c78e":pct2>=50?"#e8d5a3":"#f14668";
+    const s=getWordStats(word);
+    return `<div class="bd-row">
+      <div class="bd-word" title="${word.english}" style="width:150px">${word.english}</div>
+      <div class="bd-bar-wrap"><div class="bd-bar" style="width:${pct2}%;background:${bc}"></div></div>
+      <div class="bd-score" style="color:${bc};font-weight:bold;width:36px">${pct2}%</div>
+    </div>`;
+  }).join(""));
+
+  if(wrongWords.length>0){
+    show("retry-missed-btn");
+    el("retry-missed-btn").onclick=()=>{
+      startQuiz(buildSession(Math.min(wrongWords.length*3,cfg.questionCount),0,wrongWords));
+    };
+  } else { hide("retry-missed-btn"); }
+
+  showScreen("results");
+}
+
+el("home-btn").addEventListener("click",()=>{ renderSetup(); showScreen("setup"); });
+el("export-btn").addEventListener("click",exportProgress);
+el("new-round-btn").addEventListener("click",()=>{
+  startQuiz(buildSession(cfg.questionCount,cfg.newWordsCount,null));
+});
+
+// ════════════════════════════════════════════════════
+// PROGRESS SCREEN
+// ════════════════════════════════════════════════════
+let currentTab="heatmap";
+
+function renderProgress(tab){
+  currentTab=tab||currentTab;
+  el("tab-row").querySelectorAll(".tab-btn").forEach(b=>b.classList.toggle("active",b.dataset.tab===currentTab));
+
+  const today=todayKey();
+  let html="";
+
+  if(currentTab==="heatmap"){
+    html=buildHeatmap();
+
+  } else if(currentTab==="words"){
+    const entries=WORDS.slice(0,APP.unlockedCount).map(w=>{
+      const stats=getWordStats(w),srs=getSRS(w);
+      return{...w,stats,acc:getAccuracy(w),weight:srs.weight};
+    }).sort((a,b)=>(a.acc??-1)-(b.acc??-1));
+
+    html=entries.map(({english,pinyin,chinese,acc,stats,weight})=>{
+      const ac=acc!==null?(acc>=80?"#48c78e":acc>=50?"#e8d5a3":"#f14668"):"";
+      const weak=weight>2?`<span style="color:#f14668;font-size:9px" title="Appears more often">⚠</span>`:"";
+      return `<div class="word-row">
+        <div class="word-zh-big">${chinese}</div>
+        <div class="word-info"><div class="word-en">${english} ${weak}</div><div class="word-py">${pinyin}</div></div>
+        ${acc!==null
+          ?`<div class="word-acc"><div class="word-acc-pct" style="color:${ac}">${acc}%</div><div class="word-tries">${stats.total} tries</div></div>`
+          :`<div class="word-nottried">not tried</div>`}
+      </div>`;
+    }).join("");
+    if(APP.unlockedCount<WORDS.length){
+      html+=`<div style="text-align:center;padding:14px;color:rgba(255,255,255,0.2);font-size:11px">
+        + ${WORDS.length-APP.unlockedCount} words locked — keep practicing
+      </div>`;
+    }
+
+  } else if(currentTab==="daily"){
+    const last14=Array.from({length:14},(_,i)=>{
+      const d=new Date(); d.setDate(d.getDate()-(13-i));
+      return d.toISOString().slice(0,10);
+    });
+    html=last14.map(day=>{
+      const log=APP.dailyLog[day]||{};
+      const label=day===today?"Today":day;
+      const color=day===today?"#e8d5a3":"rgba(255,255,255,0.7)";
+      return `<div class="log-row">
+        <div><div class="log-date" style="color:${color}">${label}</div><div class="log-sess">${log.sessions||0} sessions</div></div>
+        <div><div class="log-words">${log.words||0} words</div><div class="log-min">${log.minutes||0} min</div></div>
+      </div>`;
+    }).reverse().join("");
+
+  } else if(currentTab==="weekly"){
+    const weeks={};
+    Object.entries(APP.dailyLog).forEach(([day,log])=>{
+      const d=new Date(day),ws=new Date(d); ws.setDate(d.getDate()-d.getDay());
+      const wk2=ws.toISOString().slice(0,10);
+      if(!weeks[wk2]) weeks[wk2]={words:0,minutes:0,sessions:0};
+      weeks[wk2].words+=log.words||0; weeks[wk2].minutes+=log.minutes||0; weeks[wk2].sessions+=log.sessions||0;
+    });
+    html=Object.entries(weeks).sort(([a],[b])=>b.localeCompare(a)).map(([wk2,log])=>
+      `<div class="log-row">
+        <div><div class="log-date">Week of ${wk2}</div><div class="log-sess">${log.sessions} sessions</div></div>
+        <div><div class="log-words">${log.words} words</div><div class="log-min">${log.minutes} min</div></div>
+      </div>`
+    ).join("")||`<div style="color:rgba(255,255,255,0.3);text-align:center;padding:36px;font-size:11px">No data yet — start practicing!</div>`;
+  }
+
+  setHtml("tab-content",html);
+  showScreen("progress");
+}
+
+// ── Heatmap calendar (6 months) ──────────────────
+function buildHeatmap(){
+  const today=new Date();
+  const todayStr=today.toISOString().slice(0,10);
+  const streak=calcStreak();
+  const MONTH_NAMES=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const WEEKS=26; // ~6 months
+  const totalDays=WEEKS*7;
+
+  // Build array of dates
+  const startDate=new Date(today);
+  startDate.setDate(startDate.getDate()-totalDays+1);
+
+  // Group into months
+  const months={};
+  for(let i=0;i<totalDays;i++){
+    const d=new Date(startDate); d.setDate(startDate.getDate()+i);
+    const key=d.toISOString().slice(0,10);
+    const mKey=key.slice(0,7);
+    if(!months[mKey]) months[mKey]=[];
+    months[mKey].push(key);
+  }
+
+  let html=`<div class="heatmap-wrap">
+    <div class="heatmap-title">PRACTICE CALENDAR — ${streak} DAY STREAK 🔥</div>`;
+
+  Object.entries(months).forEach(([mKey,days])=>{
+    const mLabel=MONTH_NAMES[parseInt(mKey.slice(5,7))-1]+" "+mKey.slice(0,4);
+    // pad first week
+    const firstDOW=new Date(days[0]).getDay();
+    let colDays=Array(firstDOW).fill(null);
+    const cols=[];
+    days.forEach(d=>{
+      colDays.push(d);
+      if(colDays.length===7){cols.push(colDays);colDays=[];}
+    });
+    if(colDays.length) cols.push(colDays);
+
+    html+=`<div class="heatmap-month">
+      <div class="heatmap-month-label">${mLabel}</div>
+      <div class="heatmap-weeks">`;
+
+    cols.forEach(col=>{
+      html+=`<div class="heatmap-col">`;
+      col.forEach(day=>{
+        if(!day){html+=`<div class="hm-cell" style="visibility:hidden"></div>`;return;}
+        const log=APP.dailyLog[day];
+        const mins=log?(log.minutes||0):0;
+        const lvl=!log?0:mins<5?1:mins<15?2:mins<30?3:4;
+        const tip=log?`${day}: ${log.sessions||0}s · ${log.words||0}w · ${mins}min`:day;
+        const outline=day===todayStr?"outline:1.5px solid #e8d5a3;outline-offset:1px;":"";
+        html+=`<div class="hm-cell hm-${lvl}" style="${outline}" data-tip="${tip}"></div>`;
+      });
+      html+=`</div>`;
+    });
+    html+=`</div></div>`;
+  });
+
+  html+=`<div class="heatmap-legend">
+    Less
+    <div class="hm-leg hm-0"></div><div class="hm-leg hm-1"></div>
+    <div class="hm-leg hm-2"></div><div class="hm-leg hm-3"></div><div class="hm-leg hm-4"></div>
+    More &nbsp; (hover for details)
+  </div></div>`;
+  return html;
+}
+
+// Tab clicks
+document.addEventListener("click",e=>{
+  const tb=e.target.closest(".tab-btn");
+  if(tb&&tb.closest("#screen-progress")) renderProgress(tb.dataset.tab);
+});
+el("back-btn").addEventListener("click",()=>{ renderSetup(); showScreen("setup"); });
+
+// ════════════════════════════════════════════════════
+// CSV EXPORT
+// ════════════════════════════════════════════════════
+function exportProgress(){
+  const rows=[["English","Chinese","Pinyin","Correct","Total","Accuracy%","Last Seen","SRS Weight"]];
+  WORDS.forEach(w=>{
+    const s=getWordStats(w),srs=getSRS(w);
+    const acc=s.total>0?Math.round((s.correct/s.total)*100):"";
+    rows.push([w.english,w.chinese,w.pinyin,s.correct,s.total,acc,s.lastSeen||"",srs.weight.toFixed(1)]);
+  });
+  rows.push([],["--- Daily Log ---"],["Date","Sessions","Words","Minutes"]);
+  Object.entries(APP.dailyLog).sort(([a],[b])=>b.localeCompare(a)).forEach(([day,log])=>{
+    rows.push([day,log.sessions||0,log.words||0,log.minutes||0]);
+  });
+  const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(",")).join("\n");
+  const blob=new Blob(["\uFEFF"+csv],{type:"text/csv;charset=utf-8;"});
+  const url=URL.createObjectURL(blob); const a=document.createElement("a");
+  a.href=url; a.download="chinese_progress.csv"; a.click(); URL.revokeObjectURL(url);
+}
+
+// ════════════════════════════════════════════════════
+// KEYBOARD SHORTCUTS
+// ════════════════════════════════════════════════════
+document.addEventListener("keydown",e=>{
+  if(el("screen-quiz").classList.contains("hidden")) return;
+  if(e.key==="d"||e.key==="D"){ handleDontKnow(); return; }
+  if(e.key==="s"||e.key==="S"){
+    if(currentWord&&currentMode) speak(currentWord[currentMode.show],currentMode.show==="chinese"?"zh-CN":"en-US");
+    return;
+  }
+  if(["1","2","3","4"].includes(e.key)){
+    const btns=[...el("choices-grid").querySelectorAll(".choice-btn")];
+    if(btns[+e.key-1]&&!quiz.answered) btns[+e.key-1].click();
+    return;
+  }
+  if((e.key===" "||e.key==="Enter")&&!el("next-btn").classList.contains("hidden")){
+    e.preventDefault(); el("next-btn").click();
+  }
+});
+
+// ════════════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════════════
+renderSetup();
+showScreen("setup");
+</script>
+</body>
+</html>
