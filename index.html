@@ -233,16 +233,6 @@ window.addEventListener("popstate", function(){
 });
 
 // ── Auth state → reload current view ───────────────────────────────────────
-
-// #27 — Retry failed Firestore saves when connection restores
-window.addEventListener("online",function(){
-  if(_pendingFirestoreSave && currentUser && currentUser.uid===_pendingFirestoreSave.uid){
-    db.collection("users").doc(_pendingFirestoreSave.uid)
-      .set(_pendingFirestoreSave.data,{merge:true})
-      .then(function(){ console.log("Firestore retry succeeded"); _pendingFirestoreSave=null; })
-      .catch(function(e){ console.warn("Firestore retry failed:",e); });
-  }
-});
 var _lastAuthUid=null;
 // #27 retry queue — stores {key,value} when Firestore write fails offline
 auth.onAuthStateChanged(function(user){
