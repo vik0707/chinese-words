@@ -15,6 +15,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics-compat.js"></script>
 </head>
 <body>
 <div id="loading">LOADING...</div>
@@ -30,10 +31,12 @@ var firebaseConfig = {
   projectId: "chinese-learning-vik707",
   storageBucket: "chinese-learning-vik707.firebasestorage.app",
   messagingSenderId: "850531534541",
-  appId: "1:850531534541:web:cf23bfe4e3e7a664018b84"
+  appId: "1:850531534541:web:cf23bfe4e3e7a664018b84",
+  measurementId: "G-RRT52QMSMT"
 };
 firebase.initializeApp(firebaseConfig);
 var auth = firebase.auth();
+var analytics = firebase.analytics();
 var db   = firebase.firestore();
 var currentUser = null;
 
