@@ -246,7 +246,7 @@ window.addEventListener("popstate", function(){
 });
 
 // ── Auth state → reload current view ───────────────────────────────────────
-var _lastAuthUid=null;
+var _lastAuthUid="__INIT__";  // sentinel — ensures first onAuthStateChanged always calls showApp
 // #27 retry queue — stores {key,value} when Firestore write fails offline
 auth.onAuthStateChanged(function(user){
   var uid=user?user.uid:null;
