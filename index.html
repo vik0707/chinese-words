@@ -170,6 +170,29 @@ frame.addEventListener("load", function(){
   }
 });
 
+
+// #27: Firestore retry queue — flushes on reconnect
+var _fsRetryQueue = [];
+function _fsWrite(uid, upd) {
+  if (!currentUser || currentUser.uid !== uid) return;
+  db.collection("users").doc(uid).set(upd, {merge:true}).catch(function(e){
+    console.warn("Firestore save failed (queued for retry):", e);
+    _fsRetryQueue.push({uid: uid, upd: upd});
+  });
+}
+window.addEventListener("online", function() {
+  if (!_fsRetryQueue.length) return;
+  console.warn("Back online — retrying " + _fsRetryQueue.length + " queued Firestore write(s)");
+  var q = _fsRetryQueue.splice(0);
+  q.forEach(function(item) {
+    if (currentUser && currentUser.uid === item.uid) {
+      db.collection("users").doc(item.uid).set(item.upd, {merge:true})
+        .then(function(){ console.warn("Retry succeeded"); })
+        .catch(function(e){ console.warn("Retry failed again:", e); _fsRetryQueue.push(item); });
+    }
+  });
+});
+
 window.addEventListener("message", function(e){
   var d = e.data;
   if (!d || typeof d !== "object") return;
@@ -183,7 +206,7 @@ window.addEventListener("message", function(e){
     safeSet(d.key, String(d.value));
     if (currentUser && STORE_KEYS.indexOf(d.key)!==-1){
       var upd={}; upd[d.key]=String(d.value);
-      db.collection("users").doc(currentUser.uid).set(upd,{merge:true}).catch(function(e){console.warn("Firestore save failed:",e);});
+      _fsWrite(currentUser.uid, upd);
     }
   } else if (d.type==="ls-remove" && typeof d.key==="string"){
     safeRemove(d.key);
@@ -210,7 +233,18 @@ window.addEventListener("popstate", function(){
 });
 
 // ── Auth state → reload current view ───────────────────────────────────────
+
+// #27 — Retry failed Firestore saves when connection restores
+window.addEventListener("online",function(){
+  if(_pendingFirestoreSave && currentUser && currentUser.uid===_pendingFirestoreSave.uid){
+    db.collection("users").doc(_pendingFirestoreSave.uid)
+      .set(_pendingFirestoreSave.data,{merge:true})
+      .then(function(){ console.log("Firestore retry succeeded"); _pendingFirestoreSave=null; })
+      .catch(function(e){ console.warn("Firestore retry failed:",e); });
+  }
+});
 var _lastAuthUid=null;
+// #27 retry queue — stores {key,value} when Firestore write fails offline
 auth.onAuthStateChanged(function(user){
   var uid=user?user.uid:null;
   if(uid===_lastAuthUid) return; // token refresh — don't reload iframe mid-session
