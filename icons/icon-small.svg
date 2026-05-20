@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="Chinese Learning">
+  <title>Chinese Learning</title>
+  
+  <rect width="100" height="100" fill="#231f1c"></rect>
+  <g fill="none" stroke="#ece6d5" stroke-width="6" stroke-linejoin="miter" stroke-linecap="square">
+    <path d="M 6 22 L 6 6 L 22 6"></path>
+    <path d="M 78 6 L 94 6 L 94 22"></path>
+    <path d="M 6 78 L 6 94 L 22 94"></path>
+    <path d="M 94 78 L 94 94 L 78 94"></path>
+  </g>
+  <text x="50" y="52" font-family="&#39;Noto Sans SC&#39;,&#39;PingFang SC&#39;,&#39;Hiragino Sans GB&#39;,&#39;Microsoft YaHei&#39;,sans-serif" font-size="64" font-weight="900" fill="#d6a653" text-anchor="middle" dominant-baseline="central">学</text>
+</svg>

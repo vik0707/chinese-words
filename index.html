@@ -4,6 +4,26 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Automotive Vocabulary - Chinese Learning</title>
+
+<!-- Favicons / app icons (modern browsers prefer SVG) -->
+<link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16.png">
+
+<!-- iOS "Add to Home Screen" -->
+<link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
+
+<!-- PWA manifest (Android + desktop install) -->
+<link rel="manifest" href="icons/manifest.webmanifest">
+
+<!-- Address-bar tint on mobile -->
+<meta name="theme-color" content="#231f1c">
+
+<!-- iOS Safari extras -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="学中文">
+
 <style>
   html, body { margin:0; padding:0; height:100%; overflow:hidden; background:#0a0e1a; }
   #app-frame { width:100%; height:100vh; border:0; display:block; background:#0a0e1a; }
@@ -302,22 +322,4 @@ window.addEventListener("message", function(e){
   }
 });
 
-window.addEventListener("popstate", function(){
-  var h = location.hash.replace("#","");
-  showApp(h==="en"||h==="zh" ? h : "landing");
-});
-
-// ── Auth state → reload current view ───────────────────────────────────────
-var _lastAuthUid="__INIT__";  // sentinel — ensures first onAuthStateChanged always calls showApp
-// #27 retry queue — stores {key,value} when Firestore write fails offline
-auth.onAuthStateChanged(function(user){
-  var uid=user?user.uid:null;
-  if(uid===_lastAuthUid) return; // token refresh — don't reload iframe mid-session
-  _lastAuthUid=uid;
-  currentUser = user;
-  var which = location.hash.replace("#","");
-  showApp(which==="en"||which==="zh" ? which : "landing");
-});
-</script>
-</body>
-</html>
+window.a
