@@ -23,7 +23,6 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="学中文">
-
 <style>
   html, body { margin:0; padding:0; height:100%; overflow:hidden; background:#0a0e1a; }
   #app-frame { width:100%; height:100vh; border:0; display:block; background:#0a0e1a; }
@@ -322,4 +321,22 @@ window.addEventListener("message", function(e){
   }
 });
 
-window.a
+window.addEventListener("popstate", function(){
+  var h = location.hash.replace("#","");
+  showApp(h==="en"||h==="zh" ? h : "landing");
+});
+
+// ── Auth state → reload current view ───────────────────────────────────────
+var _lastAuthUid="__INIT__";  // sentinel — ensures first onAuthStateChanged always calls showApp
+// #27 retry queue — stores {key,value} when Firestore write fails offline
+auth.onAuthStateChanged(function(user){
+  var uid=user?user.uid:null;
+  if(uid===_lastAuthUid) return; // token refresh — don't reload iframe mid-session
+  _lastAuthUid=uid;
+  currentUser = user;
+  var which = location.hash.replace("#","");
+  showApp(which==="en"||which==="zh" ? which : "landing");
+});
+</script>
+</body>
+</html>
